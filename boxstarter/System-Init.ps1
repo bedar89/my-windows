@@ -1,3 +1,122 @@
+1. Install Chocolatey
+<#
+Set-ExecutionPolicy RemoteSigned -Force
+
+# Create empty profile (so profile-integration scripts have something to append to)
+if (-not (Test-Path $PROFILE)) {
+    $directory = [IO.Path]::GetDirectoryName($PROFILE)
+    if (-not (Test-Path $directory)) {
+        New-Item -ItemType Directory $directory | Out-Null
+    }
+    
+    "# Profile" > $PROFILE
+}
+
+iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+choco feature enable -n=allowGlobalConfirmation
+choco feature enable -n=useRememberedArgumentsForUpgrades
+
+# Copy chocolatey.license.xml to C:\ProgramData\chocolatey\license
+
+cinst chocolatey.extension
+cinst boxstarter
+
+#>
+# 2. Run with this:
+<#
+$cred=Get-Credential domain\username
+Install-BoxstarterPackage -PackageName https://gist.githubusercontent.com/flcdrg/87802af4c92527eb8a30/raw/boxstarter-bare.ps1 -Credential $cred
+#>
+
+# https://github.com/mwrock/boxstarter/issues/241#issuecomment-336028348
+New-Item -Path "c:\temp" -ItemType directory -Force | Out-Null
+
+Update-ExecutionPolicy RemoteSigned
+Set-WindowsExplorerOptions -EnableShowFileExtensions -EnableExpandToOpenFolder
+
+# No SMB1 - https://blogs.technet.microsoft.com/filecab/2016/09/16/stop-using-smb1/
+Disable-WindowsOptionalFeature -Online -FeatureName smb1protocol
+
+Enable-RemoteDesktop
+
+# NuGet package provider. Do this early as reboots are required
+
+if (-not (Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue)) {
+    Write-Host "Install-PackageProvider"
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+    
+    # Exit equivalent
+    Invoke-Reboot
+}
+
+
+# Install initial version of PowerShellGet
+if (-not (Get-InstalledModule -Name PowerShellGet -ErrorAction SilentlyContinue)) {
+    Write-Host "Install-Module PowerShellGet"
+    Install-Module -Name "PowerShellGet" -AllowClobber -Force
+
+    # Exit equivalent
+    Invoke-Reboot
+}
+
+# Upgrade to latest version (> 2.2)
+if (Get-InstalledModule -Name PowerShellGet | Where-Object { $_.Version -le 2.2 } ) {
+    #Write-Host "Update-Module PowerShellGet"
+    
+    # Unload this first to avoid 
+    #Write-Host "Removing in-use modules"
+    #Remove-Module PowerShellGet -Force
+    #Remove-Module PackageManagement -Force
+    
+    # This fails due to "module 'PackageManagement' is currently in use" error. Don't think there's a way around this.
+    #PowerShellGet\Update-Module -Name PowerShellGet -Force
+
+    # Exit equivalent
+    #Invoke-Reboot
+}
+
+# Windows features
+cinst NetFx3 TelnetClient Microsoft-Hyper-V-All IIS-WebServerRole IIS-NetFxExtensibility45 IIS-HttpCompressionDynamic IIS-WindowsAuthentication IIS-ASPNET45 IIS-IIS6ManagementCompatibility Containers -source windowsfeatures --cacheLocation="c:\temp"
+
+#--- Uninstall unwanted default apps ---
+$applicationList = @(	
+    "Microsoft.3DBuilder"
+    "Microsoft.CommsPhone"
+    "Microsoft.Getstarted"
+    "*MarchofEmpires*"
+    "Microsoft.GetHelp"
+    "Microsoft.Messaging"
+    "*Minecraft*"
+    "Microsoft.MicrosoftOfficeHub"
+    # "Microsoft.WindowsPhone"
+    "*Solitaire*"
+    "Microsoft.MicrosoftStickyNotes"
+    "Microsoft.Office.Sway"
+    # "Microsoft.XboxApp"
+    # "Microsoft.XboxIdentityProvider"
+    "Microsoft.NetworkSpeedTest"
+    "Microsoft.Print3D"
+
+    #Non-Microsoft
+    "*Autodesk*"
+    "*BubbleWitch*"
+    "king.com.CandyCrush*"
+    "*Dell*"
+    "*Dropbox*"
+    "*Facebook*"
+    "*Keeper*"
+    # "*Plex*"
+    "*.Duolingo-LearnLanguagesforFree"
+    "*.EclipseManager"
+    "ActiproSoftwareLLC.562882FEEB491" # Code Writer
+    "*.AdobePhotoshopExpress");
+
+foreach ($app in $applicationList) {
+    Remove-App $app
+}
+
+
 ############################################
 #                                          #
 # SYSTEM INIT SCRIPT                       #
@@ -38,31 +157,22 @@ cinst slack
 #cinst spotify
 cinst discord
 cinst windowsfirewallcontrol
-cinst transmission
-cinst zoom
 cinst git
-cinst nodejs
 cinst powershell-core
-cinst peazip
 cinst vcxsrv
 cinst obs-studio
 cinst screentogif
-cinst greenshot
 cinst vlc
-cinst firacodenf
-cinst voicemeeter
-cinst gimp
-cinst altair-graphql
 
-# Command line tools
-cinst awscli
-cinst bat
-cinst RunInBash
-cinst bottom
-cinst fzf
-cinst fd
-cinst ripgrep
-cinst sd
+# # Command line tools
+# cinst awscli
+# cinst bat
+# cinst RunInBash
+# cinst bottom
+# cinst fzf
+# cinst fd
+# cinst ripgrep
+# cinst sd
 
 ############################################
 #                                          #
@@ -121,4 +231,4 @@ if ($exclusionsToAdd.Length -gt 0) {
 # S E T U P   MYWINDOWS   S E T T I N G S  #
 #                                          #
 ############################################
-git clone https://github.com/nickseagull/my-windows $env:USERPROFILE\Projects\my-windows
+git clone https://github.com/bedar89/my-windows $env:USERPROFILE\Projects\my-windows
