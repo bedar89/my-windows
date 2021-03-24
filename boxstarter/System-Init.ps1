@@ -1,3 +1,4 @@
+#
 #1. Install Chocolatey
 <#
 Set-ExecutionPolicy RemoteSigned -Force
