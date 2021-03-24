@@ -1,4 +1,4 @@
-1. Install Chocolatey
+#1. Install Chocolatey
 <#
 Set-ExecutionPolicy RemoteSigned -Force
 
@@ -26,7 +26,7 @@ cinst boxstarter
 # 2. Run with this:
 <#
 $cred=Get-Credential domain\username
-Install-BoxstarterPackage -PackageName https://gist.githubusercontent.com/flcdrg/87802af4c92527eb8a30/raw/boxstarter-bare.ps1 -Credential $cred
+Install-BoxstarterPackage -PackageName https://raw.githubusercontent.com/bedar89/my-windows/master/boxstarter/System-Init.ps1 -Credential $cred
 #>
 
 # https://github.com/mwrock/boxstarter/issues/241#issuecomment-336028348
